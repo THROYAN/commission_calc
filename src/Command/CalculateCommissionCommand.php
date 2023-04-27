@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Model\Transaction;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -37,22 +38,22 @@ class CalculateCommissionCommand extends Command
             if (empty($row)) {
                 break;
             }
-            $value = \json_decode($row, true);
+            $transaction = Transaction::fromJSON($row);
 
-            $binResults = \file_get_contents('https://lookup.binlist.net/' .$value['bin']);
+            $binResults = \file_get_contents('https://lookup.binlist.net/' .$transaction->getBin());
             if (!$binResults) {
                 die('error!');
             }
             $r = \json_decode($binResults);
             $isEu = self::isEu($r->country->alpha2);
 
-            $rate = @\json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$value['currency']];
+            $rate = @\json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$transaction->getCurrency()];
 
-            if ($value['currency'] == 'EUR' || $rate == 0) {
-                $amntFixed = $value['amount'];
+            if ($transaction->getCurrency() == 'EUR' || $rate == 0) {
+                $amntFixed = $transaction->getAmount();
             }
-            if ($value['currency'] != 'EUR' && $rate > 0) {
-                $amntFixed = $value['amount'] / $rate;
+            if ($transaction->getCurrency() != 'EUR' && $rate > 0) {
+                $amntFixed = $transaction->getAmount() / $rate;
             }
 
             $output->writeln($amntFixed * ($isEu ? 0.01 : 0.02));
