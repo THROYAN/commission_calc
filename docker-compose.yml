@@ -1,0 +1,11 @@
+services:
+  php:
+    build:
+      context: .
+      args:
+        uid: 1000
+        user: throyan
+    volumes:
+      - "./:/var/www"
+    command: "php app.php input.txt"
+
