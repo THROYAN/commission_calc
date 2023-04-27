@@ -25,37 +25,37 @@ class CalculateCommissionCommand extends Command
             throw new \RuntimeException('File not found');
         }
 
-        foreach (explode("\n", file_get_contents($file)) as $row) {
+        foreach (explode("\n", \file_get_contents($file)) as $row) {
             if (empty($row)) {
                 break;
             }
-            $value = json_decode($row, true);
-        
-            $binResults = file_get_contents('https://lookup.binlist.net/' .$value['bin']);
-            if (!$binResults)
+            $value = \json_decode($row, true);
+
+            $binResults = \file_get_contents('https://lookup.binlist.net/' .$value['bin']);
+            if (!$binResults) {
                 die('error!');
-            $r = json_decode($binResults);
+            }
+            $r = \json_decode($binResults);
             $isEu = self::isEu($r->country->alpha2);
-        
-            $rate = @json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$value['currency']];
-        
+
+            $rate = @\json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$value['currency']];
+
             if ($value['currency'] == 'EUR' || $rate == 0) {
                 $amntFixed = $value['amount'];
             }
             if ($value['currency'] != 'EUR' && $rate > 0) {
                 $amntFixed = $value['amount'] / $rate;
             }
-        
-            echo $amntFixed * ($isEu == 'yes' ? 0.01 : 0.02);
-            print "\n";
+
+            $output->writeln($amntFixed * ($isEu ? 0.01 : 0.02));
         }
 
         return Command::SUCCESS;
     }
-        
-    private static function isEu($c) {
-        $result = false;
-        switch($c) {
+
+    private static function isEu($c): bool
+    {
+        switch ($c) {
             case 'AT':
             case 'BE':
             case 'BG':
@@ -83,11 +83,9 @@ class CalculateCommissionCommand extends Command
             case 'SE':
             case 'SI':
             case 'SK':
-                $result = 'yes';
-                return $result;
+                return true;
             default:
-                $result = 'no';
+                return false;
         }
-        return $result;
     }
 }
