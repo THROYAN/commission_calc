@@ -1,7 +1,8 @@
 services:
   php:
     build:
-      context: .
+      context: .docker/
+      dockerfile: php.dockerfile
       args:
         uid: 1000
         user: throyan
