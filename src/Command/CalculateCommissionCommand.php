@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Country\CountryProviderInterface;
 use App\Model\Transaction;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -13,8 +14,10 @@ use Symfony\Component\Filesystem\Filesystem;
 #[AsCommand(name: 'commission:calc')]
 class CalculateCommissionCommand extends Command
 {
-    public function __construct(private Filesystem $filesystem)
-    {
+    public function __construct(
+        private Filesystem $filesystem,
+        private CountryProviderInterface $countryProvider,
+    ) {
         parent::__construct();
     }
 
@@ -40,12 +43,7 @@ class CalculateCommissionCommand extends Command
             }
             $transaction = Transaction::fromJSON($row);
 
-            $binResults = \file_get_contents('https://lookup.binlist.net/' .$transaction->getBin());
-            if (!$binResults) {
-                die('error!');
-            }
-            $r = \json_decode($binResults);
-            $isEu = self::isEu($r->country->alpha2);
+            $country = $this->countryProvider->getCountryForTransaction($transaction);
 
             $rate = @\json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$transaction->getCurrency()];
 
@@ -56,45 +54,9 @@ class CalculateCommissionCommand extends Command
                 $amntFixed = $transaction->getAmount() / $rate;
             }
 
-            $output->writeln($amntFixed * ($isEu ? 0.01 : 0.02));
+            $output->writeln($amntFixed * ($country->isEU() ? 0.01 : 0.02));
         }
 
         return Command::SUCCESS;
-    }
-
-    private static function isEu($c): bool
-    {
-        switch ($c) {
-            case 'AT':
-            case 'BE':
-            case 'BG':
-            case 'CY':
-            case 'CZ':
-            case 'DE':
-            case 'DK':
-            case 'EE':
-            case 'ES':
-            case 'FI':
-            case 'FR':
-            case 'GR':
-            case 'HR':
-            case 'HU':
-            case 'IE':
-            case 'IT':
-            case 'LT':
-            case 'LU':
-            case 'LV':
-            case 'MT':
-            case 'NL':
-            case 'PO':
-            case 'PT':
-            case 'RO':
-            case 'SE':
-            case 'SI':
-            case 'SK':
-                return true;
-            default:
-                return false;
-        }
     }
 }
