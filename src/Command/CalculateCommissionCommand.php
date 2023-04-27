@@ -7,10 +7,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 #[AsCommand(name: 'commission:calc')]
 class CalculateCommissionCommand extends Command
 {
+    public function __construct(private Filesystem $filesystem)
+    {
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
@@ -21,11 +27,13 @@ class CalculateCommissionCommand extends Command
     public function execute(InputInterface $input, OutputInterface $output)
     {
         $file = $input->getArgument('file');
-        if (!\is_file($file)) {
+        if (!$this->filesystem->exists($file)) {
             throw new \RuntimeException('File not found');
         }
 
-        foreach (explode("\n", \file_get_contents($file)) as $row) {
+        $rows = explode("\n", \file_get_contents($file));
+
+        foreach ($rows as $row) {
             if (empty($row)) {
                 break;
             }
