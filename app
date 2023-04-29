@@ -19,13 +19,11 @@ $dotenv->load(__DIR__.'/.env');
 $application = new Application();
 
 // @todo add dependency injection
-// $rateProvider = new ExchangeRatesApiRateProvider($_ENV['EXCHANGE_RATES_API_KEY']);
-// $rateProvider->apiUrl = 'https://api.apilayer.com/exchangerates_data/latest';
-$rateProvider = new ApiLayerRateProvider(new Client, $_ENV['EXCHANGE_RATES_API_KEY']);
+$httpClient = new Client;
 $application->add(new CalculateCommissionCommand(
     new Filesystem,
-    new CommissionProvider(new BinLookupCountryProvider),
-    $rateProvider,
+    new CommissionProvider(new BinLookupCountryProvider($httpClient)),
+    new ApiLayerRateProvider($httpClient, $_ENV['EXCHANGE_RATES_API_KEY']),
 ));
 
 $application->run();
