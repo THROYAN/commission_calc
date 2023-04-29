@@ -2,7 +2,7 @@
 
 namespace App\Command;
 
-use App\Country\CountryProviderInterface;
+use App\Commission\CommissionProvider;
 use App\Currency\RateProviderInterface;
 use App\Model\Transaction;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -17,7 +17,7 @@ class CalculateCommissionCommand extends Command
 {
     public function __construct(
         private Filesystem $filesystem,
-        private CountryProviderInterface $countryProvider,
+        private CommissionProvider $commissionProvider,
         private RateProviderInterface $rateProvider,
     ) {
         parent::__construct();
@@ -45,13 +45,29 @@ class CalculateCommissionCommand extends Command
             }
             $transaction = Transaction::fromJSON($row);
 
-            $country = $this->countryProvider->getCountryForTransaction($transaction);
+            $commissionRate = $this->commissionProvider->getRateForTransaction($transaction);
 
-            $rate = $this->rateProvider->getRate($transaction->getCurrency(), 'EUR');
+            $rate = $this->rateProvider->getRate('EUR', $transaction->getCurrency());
 
-            $amntFixed = $transaction->getAmount() * $rate;
+            if ($rate === 0) {
+                throw new \RuntimeException('Exchange rate can not be zero!');
+            }
+            $amountInEUR = $transaction->getAmount() / $rate;
+            $commission = $amountInEUR * $commissionRate;
 
-            $output->writeln($amntFixed * ($country->isEU() ? 0.01 : 0.02) . ' (' . $rate . ')');
+            if ($output->isVerbose()) {
+                $output->writeln(\sprintf(
+                    '%g %s = %g %5$s -> %g %s (%d%%)',
+                    round($transaction->getAmount(), 2),
+                    $transaction->getCurrency(),
+                    round($amountInEUR, 2),
+                    round($commission, 2),
+                    'EUR',
+                    $commissionRate * 100,
+                ));
+            } else {
+                $output->writeln($commission);
+            }
         }
 
         return Command::SUCCESS;

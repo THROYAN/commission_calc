@@ -4,6 +4,7 @@
 require __DIR__.'/vendor/autoload.php';
 
 use App\Command\CalculateCommissionCommand;
+use App\Commission\CommissionProvider;
 use App\Country\BinLookupCountryProvider;
 use App\Currency\ApiLayerRateProvider;
 use App\Currency\ExchangeRatesApiRateProvider;
@@ -23,7 +24,7 @@ $application = new Application();
 $rateProvider = new ApiLayerRateProvider(new Client, $_ENV['EXCHANGE_RATES_API_KEY']);
 $application->add(new CalculateCommissionCommand(
     new Filesystem,
-    new BinLookupCountryProvider,
+    new CommissionProvider(new BinLookupCountryProvider),
     $rateProvider,
 ));
 

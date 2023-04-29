@@ -11,7 +11,7 @@ class ExchangeRatesApiRateProvider implements RateProviderInterface
 
     public function getRate(string $from, string $to): float
     {
-        if ($to != 'EUR') {
+        if ($from != 'EUR') {
             throw new \RuntimeException(__CLASS__.' can provide rate only to EUR');
         }
 
@@ -24,7 +24,6 @@ class ExchangeRatesApiRateProvider implements RateProviderInterface
         if ($this->apiKey) {
             $url .= '?access_key='.$this->apiKey;
         }
-        \var_dump($url);
 
         $response = \file_get_contents($url);
         if (!$response) {
@@ -35,10 +34,10 @@ class ExchangeRatesApiRateProvider implements RateProviderInterface
             throw new \RuntimeException('Failed to load rates: '.$response);
         }
         
-        if (!\array_key_exists($from, $data)) {
-            throw new \RuntimeException('There is no rate for '.$from);
+        if (!\array_key_exists($to, $data)) {
+            throw new \RuntimeException('There is no rate for '.$to);
         }
 
-        return $data[$from];
+        return $data[$to];
     }
 }

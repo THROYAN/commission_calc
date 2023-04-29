@@ -18,7 +18,7 @@ class ApiLayerRateProvider implements RateProviderInterface
     public function getRate(string $from, string $to): float
     {
         // domain specific...)
-        if ($to != 'EUR') {
+        if ($from != 'EUR') {
             throw new \RuntimeException(__CLASS__.' can provide rate only to EUR');
         }
 
@@ -27,11 +27,9 @@ class ApiLayerRateProvider implements RateProviderInterface
             return 1;
         }
 
-        if ($this->latestCache != null && array_key_exists($from, $this->latestCache)) {
-            return $this->latestCache[$from];
+        if ($this->latestCache != null && array_key_exists($to, $this->latestCache)) {
+            return $this->latestCache[$to];
         }
-
-        $url = $this->apiUrl;
 
         $response = $this->client->get($this->apiUrl, ['headers' => ['apikey' => $this->apiKey]]);
 
@@ -43,13 +41,12 @@ class ApiLayerRateProvider implements RateProviderInterface
             throw new \RuntimeException('Failed to load rates: '.$response->getBody()->getContents());
         }
         
-        if (!\array_key_exists($from, $data['rates'])) {
-            throw new \RuntimeException('There is no rate for '.$from.'. Available rates: '.implode(', ', array_keys($data['rates'])));
+        if (!\array_key_exists($to, $data['rates'])) {
+            throw new \RuntimeException('There is no rate for '.$to.'. Available rates: '.implode(', ', array_keys($data['rates'])));
         }
         // save cache
         $this->latestCache = $data['rates'];
-        // var_dump($this->latestCache);
-
-        return $data['rates'][$from];
+ 
+        return $data['rates'][$to];
     }
 }
