@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Country\CountryProviderInterface;
+use App\Currency\RateProviderInterface;
 use App\Model\Transaction;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -17,6 +18,7 @@ class CalculateCommissionCommand extends Command
     public function __construct(
         private Filesystem $filesystem,
         private CountryProviderInterface $countryProvider,
+        private RateProviderInterface $rateProvider,
     ) {
         parent::__construct();
     }
@@ -45,16 +47,11 @@ class CalculateCommissionCommand extends Command
 
             $country = $this->countryProvider->getCountryForTransaction($transaction);
 
-            $rate = @\json_decode(file_get_contents('https://api.exchangeratesapi.io/latest'), true)['rates'][$transaction->getCurrency()];
+            $rate = $this->rateProvider->getRate($transaction->getCurrency(), 'EUR');
 
-            if ($transaction->getCurrency() == 'EUR' || $rate == 0) {
-                $amntFixed = $transaction->getAmount();
-            }
-            if ($transaction->getCurrency() != 'EUR' && $rate > 0) {
-                $amntFixed = $transaction->getAmount() / $rate;
-            }
+            $amntFixed = $transaction->getAmount() * $rate;
 
-            $output->writeln($amntFixed * ($country->isEU() ? 0.01 : 0.02));
+            $output->writeln($amntFixed * ($country->isEU() ? 0.01 : 0.02) . ' (' . $rate . ')');
         }
 
         return Command::SUCCESS;

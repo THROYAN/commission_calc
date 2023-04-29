@@ -8,5 +8,5 @@ services:
         user: throyan
     volumes:
       - "./:/var/www"
-    command: "php app.php input.txt"
+    command: "php app commission:calc input.txt"
 
